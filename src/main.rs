@@ -1,8 +1,9 @@
 #![allow(dead_code)]
-extern crate rayon;
-extern crate primal;
 extern crate num;
-#[macro_use] extern crate itertools;
+extern crate primal;
+extern crate rayon;
+#[macro_use]
+extern crate itertools;
 
 use rayon::prelude::*;
 
@@ -58,10 +59,7 @@ fn problem_two() -> String {
 fn problem_three() -> String {
     let n = 600851475143;
     let sieve = primal::Sieve::new(1_000_000_000);
-    let div = sieve.factor(n).unwrap()
-        .iter()
-        .map(|x| x.0)
-        .max().unwrap();
+    let div = sieve.factor(n).unwrap().iter().map(|x| x.0).max().unwrap();
 
     format!("{:?}", div)
 }
@@ -77,22 +75,27 @@ fn problem_four() -> String {
     let r1 = (100..1000_usize).rev();
     let r2 = (100..1000_usize).rev();
 
-    let big_pal = iproduct!(r1, r2).filter_map(|(x, y)| {
-        let product = x * y;
+    let big_pal = iproduct!(r1, r2)
+        .filter_map(|(x, y)| {
+            let product = x * y;
 
-        if is_palindrome(product) {
-            Some(product)
-        } else {
-            None
-        }
-    }).max().unwrap();
+            if is_palindrome(product) {
+                Some(product)
+            } else {
+                None
+            }
+        })
+        .max()
+        .unwrap();
 
     format!("{:?}", big_pal)
 }
 
 fn num_to_bytes(num: usize) -> Vec<usize> {
     fn x_inner(n: usize, xs: &mut Vec<usize>) {
-        if n >= 10 { x_inner(n / 10, xs) };
+        if n >= 10 {
+            x_inner(n / 10, xs)
+        };
         xs.push(n % 10);
     }
 
@@ -132,7 +135,7 @@ fn problem_five() -> String {
     let divisors = [20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 4];
 
     let val = (20..)
-        .find(|x| divisors.iter().all(|&y| { x % y == 0 }))
+        .find(|x| divisors.iter().all(|&y| x % y == 0))
         .unwrap();
 
     format!("{:?}", val)
@@ -235,9 +238,7 @@ fn problem_eight() -> String {
 fn problem_nine() -> String {
     let (a, b, c) = iproduct!((0_u32..1000), (0_u32..1000), (0_u32..1000))
         .find(|&(a, b, c)| {
-               (a < b) && (b < c)
-            && (a + b + c == 1000)
-            && (a.pow(2) + b.pow(2) == c.pow(2))
+            (a < b) && (b < c) && (a + b + c == 1000) && (a.pow(2) + b.pow(2) == c.pow(2))
         })
         .unwrap();
 
