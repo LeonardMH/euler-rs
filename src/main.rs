@@ -57,6 +57,7 @@ fn problem_two() -> String {
 /// The prime factors of 13195 are 5, 7, 13 and 29.
 /// What is the largest prime factor of the number 600851475143?
 fn problem_three() -> String {
+    #[allow(clippy::unreadable_literal)]
     let n = 600851475143;
     let sieve = primal::Sieve::new(1_000_000_000);
     let div = sieve.factor(n).unwrap().iter().map(|x| x.0).max().unwrap();
@@ -254,6 +255,257 @@ fn problem_ten() -> String {
     format!("{}", sum)
 }
 
+/// Problem 11: Largest product in a grid
+///
+/// In the 20×20 grid below (in the code), four numbers along a diagonal line have been marked in
+/// red (see the site, starts at coordinates (8, 6) and goes down and to the right).
+///
+/// The product of these numbers is 26 × 63 × 78 × 14 = 1788696.
+///
+/// What is the greatest product of four adjacent numbers in the same direction (up, down, left,
+/// right, or diagonally) in the 20×20 grid?
+fn problem_eleven() -> String {
+    #[allow(clippy::zero_prefixed_literal)]
+    let raw_grid = [
+        08, 02, 22, 97, 38, 15, 00, 40, 00, 75, 04, 05, 07, 78, 52, 12, 50, 77, 91, 08,
+        49, 49, 99, 40, 17, 81, 18, 57, 60, 87, 17, 40, 98, 43, 69, 48, 04, 56, 62, 00,
+        81, 49, 31, 73, 55, 79, 14, 29, 93, 71, 40, 67, 53, 88, 30, 03, 49, 13, 36, 65,
+        52, 70, 95, 23, 04, 60, 11, 42, 69, 24, 68, 56, 01, 32, 56, 71, 37, 02, 36, 91,
+        22, 31, 16, 71, 51, 67, 63, 89, 41, 92, 36, 54, 22, 40, 40, 28, 66, 33, 13, 80,
+        24, 47, 32, 60, 99, 03, 45, 02, 44, 75, 33, 53, 78, 36, 84, 20, 35, 17, 12, 50,
+        32, 98, 81, 28, 64, 23, 67, 10, 26, 38, 40, 67, 59, 54, 70, 66, 18, 38, 64, 70,
+        67, 26, 20, 68, 02, 62, 12, 20, 95, 63, 94, 39, 63, 08, 40, 91, 66, 49, 94, 21,
+        24, 55, 58, 05, 66, 73, 99, 26, 97, 17, 78, 78, 96, 83, 14, 88, 34, 89, 63, 72,
+        21, 36, 23, 09, 75, 00, 76, 44, 20, 45, 35, 14, 00, 61, 33, 97, 34, 31, 33, 95,
+        78, 17, 53, 28, 22, 75, 31, 67, 15, 94, 03, 80, 04, 62, 16, 14, 09, 53, 56, 92,
+        16, 39, 05, 42, 96, 35, 31, 47, 55, 58, 88, 24, 00, 17, 54, 24, 36, 29, 85, 57,
+        86, 56, 00, 48, 35, 71, 89, 07, 05, 44, 44, 37, 44, 60, 21, 58, 51, 54, 17, 58,
+        19, 80, 81, 68, 05, 94, 47, 69, 28, 73, 92, 13, 86, 52, 17, 77, 04, 89, 55, 40,
+        04, 52, 08, 83, 97, 35, 99, 16, 07, 97, 57, 32, 16, 26, 26, 79, 33, 27, 98, 66,
+        88, 36, 68, 87, 57, 62, 20, 72, 03, 46, 33, 67, 46, 55, 12, 32, 63, 93, 53, 69,
+        04, 42, 16, 73, 38, 25, 39, 11, 24, 94, 72, 18, 08, 46, 29, 32, 40, 62, 76, 36,
+        20, 69, 36, 41, 72, 30, 23, 88, 34, 62, 99, 69, 82, 67, 59, 85, 74, 04, 36, 16,
+        20, 73, 35, 29, 78, 31, 90, 01, 74, 31, 49, 71, 48, 86, 81, 16, 23, 57, 05, 54,
+        01, 70, 54, 71, 83, 51, 54, 69, 16, 92, 33, 48, 61, 43, 52, 01, 89, 19, 67, 48,
+    ];
+
+    let grid = match Grid::new(20, 20, &raw_grid) {
+        Ok(x) => x,
+        Err(x) => return x.to_owned(),
+    };
+
+    // multiplication is associative, so opposing cardinal directions cancel each other out and
+    // don't need to be checked, therefore...
+    //
+    // - Direction::North for up and down
+    // - Direction::East for left and right
+    // - Direction::NorthEast covers left-to-right rising / right-to-left falling diagonal
+    // - Direction::SouthEast covers left-to-right falling / right-to-left rising diagonal
+    let directions = [Direction::North, Direction::East, Direction::NorthEast, Direction::SouthEast].iter();
+    let coordinates = iproduct!((0..grid.num_rows), (0..grid.num_columns));
+    let max_stride_product = iproduct!(coordinates, directions)
+        .filter_map(|((x, y), d)| grid.product(&Coordinate { x, y }, 3, d))
+        .max()
+        .unwrap();
+
+    format!("{}", max_stride_product)
+}
+
+#[derive(Debug, Clone)]
+struct Coordinate {
+    x: usize,
+    y: usize,
+}
+
+#[derive(Debug)]
+enum Direction {
+    North,
+    NorthEast,
+    East,
+    SouthEast,
+    South,
+    SouthWest,
+    West,
+    NorthWest,
+}
+
+impl Direction {
+    fn goes_up(&self) -> bool {
+        match self {
+            Direction::North
+            | Direction::NorthEast
+            | Direction::NorthWest => true,
+            _ => false,
+        }
+    }
+
+    fn goes_down(&self) -> bool {
+        match self {
+            Direction::South
+            | Direction::SouthEast
+            | Direction::SouthWest => true,
+            _ => false,
+        }
+    }
+
+    fn goes_right(&self) -> bool {
+        match self {
+            Direction::East
+            | Direction::SouthEast
+            | Direction::NorthEast => true,
+            _ => false,
+        }
+    }
+
+    fn goes_left(&self) -> bool {
+        match self {
+            Direction::West
+            | Direction::SouthWest
+            | Direction::NorthWest => true,
+            _ => false,
+        }
+    }
+
+    fn move_single(&self) -> (isize, isize) {
+        match self {
+            Direction::North => (0, -1),
+            Direction::NorthEast => (1, -1),
+            Direction::East => (1, 0),
+            Direction::SouthEast => (1, 1),
+            Direction::South => (0, 1),
+            Direction::SouthWest => (-1, 1),
+            Direction::West => (-1, 0),
+            Direction::NorthWest => (-1, -1),
+        }
+    }
+
+    fn move_stride(&self, stride: usize) -> (isize, isize) {
+        let (x, y) = self.move_single();
+        (x * (stride as isize), y * (stride as isize))
+    }
+}
+
+struct Grid<'a> {
+    raw: &'a [u8],
+    num_columns: usize,
+    num_rows: usize,
+}
+
+impl <'a> Grid<'a> {
+    pub fn new(num_columns: usize, num_rows: usize, input: &[u8]) -> Result<Grid, &str> {
+        if num_columns * num_rows > input.len() {
+            return Err("invalid-grid");
+        }
+
+        let grid = Grid {
+            raw: input,
+            num_columns,
+            num_rows,
+        };
+
+        Ok(grid)
+    }
+
+    fn coordinate_to_raw(&self, coordinate: &Coordinate) -> Option<usize> {
+        let Coordinate { x, y } = coordinate;
+
+        // if either coordinate is beyond their respective bound, return none
+        if *x >= self.num_columns || *y >= self.num_rows {
+            return None;
+        }
+
+        let raw = (y * self.num_columns) + x;
+
+        if raw < self.raw.len() {
+            Some(raw)
+        } else {
+            None
+        }
+    }
+
+    pub fn value(&self, c: &Coordinate) -> Option<u8> {
+        let index = self.coordinate_to_raw(&c)?;
+        Some(self.raw[index])
+    }
+
+    fn next_coordinate(&self, start: &Coordinate, stride: usize, direction: &Direction) -> Option<Coordinate> {
+        // this function assumes that start is already a valid coordinate
+        let Coordinate { x, y } = start;
+        let (inc_x, inc_y) = direction.move_stride(stride);
+
+        let opt_inc_y = match inc_y {
+            inc_y if inc_y < 0 => y.checked_sub(-inc_y as usize),
+            inc_y if inc_y > 0 => y.checked_add(inc_y as usize),
+            inc_y if inc_y == 0 => Some(*y),
+
+            // above patterns actually are exhaustive, though the rust compiler
+            // can't prove it, this is just to silence it
+            _ => None,
+        };
+
+        let opt_inc_x = match inc_x {
+            inc_x if inc_x < 0 => x.checked_sub(-inc_x as usize),
+            inc_x if inc_x > 0 => x.checked_add(inc_x as usize),
+            inc_x if inc_x == 0 => Some(*x),
+
+            // above patterns actually are exhaustive, though the rust compiler
+            // can't prove it, this is just to silence it
+            _ => None,
+        };
+
+        // if y is near a border and trying to cross over it, return None
+        let y_cross_top = (inc_y < 0) && opt_inc_y.is_none();
+        let y_cross_bot = (inc_y > 0) && (*y + inc_y as usize) > (self.num_rows - 1);
+        if y_cross_top || y_cross_bot {
+            return None;
+        }
+
+        // if x is on a border and trying to cross over it, return none
+        let x_cross_left = (inc_x < 0) && opt_inc_x.is_none();
+        let x_cross_rght = (inc_x > 0) && (*x + inc_x as usize) > (self.num_columns - 1);
+        if x_cross_left || x_cross_rght {
+            return None;
+        }
+
+        match (opt_inc_x, opt_inc_y) {
+            (Some(inc_x), Some(inc_y)) =>  Some(Coordinate { x: inc_x, y: inc_y }),
+            _ => None
+        }
+    }
+
+    fn coordinates_for_stride(&self, start: &Coordinate, stride: usize, d: &Direction) -> Option<Vec<Coordinate>> {
+        // otherwise, get each possible coordinate, if any return None then the
+        // whole return value from this function should be None, otherwise
+        // return all Coordinates unwrapped
+        let mut acc = Vec::new();
+        for s in 0..=stride {
+            if let Some(next_coord) = self.next_coordinate(start, s, d) {
+                acc.push(next_coord);
+            } else {
+                return None;
+            }
+        }
+
+        if !acc.is_empty() {
+            Some(acc)
+        } else {
+            None
+        }
+    }
+
+    fn product(&self, start: &Coordinate, stride: usize, d: &Direction) -> Option<u64> {
+        if let Some(coordinates) = self.coordinates_for_stride(start, stride, d) {
+            let product = coordinates.iter().fold(1u64, |acc, c| {
+                acc * u64::from(self.value(c).expect("safe-unwrap: coordinates valid"))
+            });
+
+            return Some(product);
+        };
+
+        None
+    }
+}
+
 fn main() {
     let fns = [
         problem_one,
@@ -266,12 +518,13 @@ fn main() {
         problem_eight,
         problem_nine,
         problem_ten,
+        problem_eleven
     ];
 
     let res: Vec<String> = fns
         .into_par_iter()
         .enumerate()
-        .map(|(i, v)| format!("{} => {}", i, v()))
+        .map(|(i, v)| format!("{:2} => {}", i + 1, v()))
         .collect();
 
     for s in res {
